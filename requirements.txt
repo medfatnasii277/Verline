@@ -1,0 +1,17 @@
+fastapi==0.116.1
+uvicorn==0.35.0
+sqlalchemy==2.0.41
+pymysql==1.1.1
+alembic==1.16.4
+bcrypt==4.3.0
+python-jose[cryptography]==3.5.0
+python-multipart==0.0.20
+pillow==11.3.0
+boto3==1.39.4
+redis==6.2.0
+celery==5.5.3
+python-dotenv==1.1.1
+email-validator==2.2.0
+aiofiles==24.1.0
+pydantic-settings==2.10.1
+passlib==1.7.4
