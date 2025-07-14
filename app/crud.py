@@ -51,6 +51,14 @@ class UserService:
         return db.query(User).offset(skip).limit(limit).all()
     
     @staticmethod
+    def get_all_users(db: Session, role: Optional[str] = None) -> List[User]:
+        """Get all users, optionally filtered by role."""
+        query = db.query(User)
+        if role:
+            query = query.filter(User.role == role)
+        return query.all()
+    
+    @staticmethod
     def update_user(db: Session, user_id: int, user_update: UserUpdate) -> Optional[User]:
         db_user = db.query(User).filter(User.id == user_id).first()
         if not db_user:
@@ -121,7 +129,8 @@ class PaintingService:
             **painting.dict(),
             artist_id=artist_id,
             image_url=image_url,
-            thumbnail_url=thumbnail_url
+            thumbnail_url=thumbnail_url,
+            status="published"  # Set status to published by default
         )
         db.add(db_painting)
         db.commit()
@@ -140,7 +149,10 @@ class PaintingService:
         filters: Optional[PaintingFilters] = None,
         sort_by: Optional[SortOptions] = None
     ) -> Tuple[List[Painting], int]:
-        query = db.query(Painting).filter(Painting.status == "published")
+        query = db.query(Painting)
+        
+        # Only filter by published status if explicitly requested
+        # For now, show all paintings regardless of status
         
         # Apply filters
         if filters:

@@ -54,7 +54,7 @@ async def create_painting(
         delete_image_files(image_url, thumbnail_url)
         raise e
 
-@router.get("/", response_model=PaginatedResponse)
+@router.get("/", response_model=PaginatedResponse[PaintingResponse])
 def get_paintings(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=50),
@@ -84,15 +84,18 @@ def get_paintings(
     skip = (page - 1) * limit
     paintings, total = PaintingService.get_paintings(db, skip, limit, filters, sort_by)
     
-    return PaginatedResponse(
-        items=paintings,
+    # Convert paintings to response objects
+    painting_responses = [PaintingResponse.model_validate(painting) for painting in paintings]
+    
+    return PaginatedResponse[PaintingResponse](
+        items=painting_responses,
         total=total,
         page=page,
         limit=limit,
         pages=(total + limit - 1) // limit
     )
 
-@router.get("/my-paintings/{artist_id}", response_model=PaginatedResponse)
+@router.get("/my-paintings/{artist_id}", response_model=PaginatedResponse[PaintingResponse])
 def get_artist_paintings(
     artist_id: int,
     page: int = Query(1, ge=1),
@@ -104,8 +107,11 @@ def get_artist_paintings(
     filters = PaintingFilters(artist_id=artist_id)
     paintings, total = PaintingService.get_paintings(db, skip, limit, filters)
     
-    return PaginatedResponse(
-        items=paintings,
+    # Convert paintings to response objects
+    painting_responses = [PaintingResponse.model_validate(painting) for painting in paintings]
+    
+    return PaginatedResponse[PaintingResponse](
+        items=painting_responses,
         total=total,
         page=page,
         limit=limit,

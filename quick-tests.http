@@ -1,53 +1,28 @@
-### Quick Start API Tests - Art Gallery
-### No external files required for basic testing
+### Quick Start API Tests - Art Gallery (No Auth Required)
+### All APIs are now publicly accessible
 
 ### Base URL and Variables
 @baseUrl = http://localhost:8000
-@testUsername = testartist
-@testPassword = testpass123
-@testEmail = testartist@example.com
+@testUserId = 1
 
 ### ==============================================
-### STEP 1: Register & Login
+### STEP 1: Public Endpoints (No Auth Required)
 ### ==============================================
 
-### 1. Register new artist account
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
+### 1. API Health Check
+GET {{baseUrl}}/
 
-{
-  "username": "{{testUsername}}",
-  "email": "{{testEmail}}",
-  "password": "{{testPassword}}",
-  "full_name": "Test Artist",
-  "role": "artist",
-  "bio": "I am a test artist."
-}
+### 2. Get all users
+GET {{baseUrl}}/users/
 
-### 2. Login and get token (SAVE THIS TOKEN!)
-# @name login
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
+### 3. Get specific user profile
+GET {{baseUrl}}/users/{{testUserId}}
 
-{
-  "username": "{{testUsername}}",
-  "password": "{{testPassword}}"
-}
+### 4. Get all categories
+GET {{baseUrl}}/categories/
 
-### COPY THE TOKEN FROM ABOVE RESPONSE AND USE IT BELOW
-### Replace YOUR_TOKEN_HERE with the actual token
-
-### ==============================================
-### STEP 2: Test Protected Endpoints
-### ==============================================
-
-### 3. Get your profile (replace YOUR_TOKEN_HERE)
-GET {{baseUrl}}/users/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0YXJ0aXN0IiwiZXhwIjoxNzUyNDQ5NjgzfQ.CKKlk-DpWrht-by7opQMMlHYKz_FIRKS573-59RFHpM
-
-### 4. Create a category
+### 5. Create a category (no auth required)
 POST {{baseUrl}}/categories/
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0YXJ0aXN0IiwiZXhwIjoxNzUyNDQ5NjgzfQ.CKKlk-DpWrht-by7opQMMlHYKz_FIRKS573-59RFHpM
 Content-Type: application/json
 
 {
@@ -55,32 +30,48 @@ Content-Type: application/json
   "description": "Abstract artworks that challenge conventional representation"
 }
 
-### 5. Get all categories
-GET {{baseUrl}}/categories/
+### 6. Get all paintings
+GET {{baseUrl}}/paintings/
 
-### 6. Update your profile
-PUT {{baseUrl}}/users/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0YXJ0aXN0IiwiZXhwIjoxNzUyNDQ5NjgzfQ.CKKlk-DpWrht-by7opQMMlHYKz_FIRKS573-59RFHpM
+### 7. Get paintings by specific user
+GET {{baseUrl}}/paintings/user/{{testUserId}}
+
+### 8. Update user profile (no auth required - pass user_id)
+PUT {{baseUrl}}/users/{{testUserId}}
 Content-Type: application/json
 
 {
   "full_name": "Updated Test Artist",
-  "email": "{{testEmail}}",
-  "bio": "Updated bio for testing"
+  "email": "updated@example.com",
+  "bio": "Updated bio for testing",
+  "user_id": {{testUserId}}
 }
 
 ### ==============================================
-### STEP 3: Public Endpoints (No Auth Required)
+### STEP 2: Advanced Testing
 ### ==============================================
 
-### 7. API Health Check
-GET {{baseUrl}}/
+### 9. Create a painting (artist functionality)
+POST {{baseUrl}}/paintings/
+Content-Type: application/json
 
-### 8. Get all users
-GET {{baseUrl}}/users/
+{
+  "title": "Test Painting",
+  "description": "A beautiful test painting",
+  "price": 1500.00,
+  "category_id": 1,
+  "artist_id": {{testUserId}},
+  "image_url": "https://example.com/test-painting.jpg"
+}
 
-### 9. API Documentation
+### 10. Get user statistics
+GET {{baseUrl}}/users/{{testUserId}}/stats
+
+### 11. API Documentation (Swagger UI)
 GET {{baseUrl}}/docs
+
+### 12. Alternative API Documentation (ReDoc)
+GET {{baseUrl}}/redoc
 
 ### ==============================================
 ### INSTRUCTIONS:
@@ -88,20 +79,23 @@ GET {{baseUrl}}/docs
 
 ### HOW TO USE:
 ### 1. Start your FastAPI server: uvicorn app.main:app --reload
-### 2. Run test #1 to register
-### 3. Run test #2 to login
-### 4. COPY the access_token from the response
-### 5. Replace "YOUR_TOKEN_HERE" in tests #3, #4, #6 with your actual token
-### 6. Run the remaining tests
+### 2. Run any test - no authentication required!
+### 3. All APIs are publicly accessible
+### 4. Use user_id parameter where needed (e.g., user_id=1 for first user)
 
-### USING THE TOKEN:
-### After login, you'll get a response like:
-### {
-###   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-###   "token_type": "bearer"
-### }
-### Copy the access_token value and use it in Authorization headers
+### SIMPLIFIED AUTHENTICATION:
+### - No tokens or login required
+### - All endpoints are public
+### - Frontend handles role-based UI simulation
+### - Backend APIs accept user_id as parameter
 
 ### FOR VS CODE USERS:
 ### Install the "REST Client" extension to run these tests directly in VS Code
 ### Each ### separates individual requests
+
+### FRONTEND TESTING:
+### 1. Start frontend: npm start
+### 2. Use demo accounts:
+###    - Artists: leonardo_davinci, van_gogh, picasso
+###    - Enthusiasts: art_lover, gallery_visitor
+### 3. Click any demo account to login instantly

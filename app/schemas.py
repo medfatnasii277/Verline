@@ -1,7 +1,10 @@
 from pydantic import BaseModel, EmailStr, validator
-from typing import Optional, List
+from typing import Optional, List, Generic, TypeVar
 from datetime import datetime
 from enum import Enum
+
+# Type variable for generic pagination
+T = TypeVar('T')
 
 # Enums
 class UserRole(str, Enum):
@@ -201,8 +204,8 @@ class PaginationParams(BaseModel):
             raise ValueError('Limit must be between 1 and 100')
         return v
 
-class PaginatedResponse(BaseModel):
-    items: List
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]
     total: int
     page: int
     limit: int

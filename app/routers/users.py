@@ -8,6 +8,19 @@ from app.models import User
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
+@router.get("/", response_model=List[UserResponse])
+def get_all_users(
+    role: Optional[str] = Query(None, description="Filter by user role (artist, enthusiast)"),
+    db: Session = Depends(get_db)
+):
+    """Get all users, optionally filtered by role."""
+    return UserService.get_all_users(db, role=role)
+
+@router.get("/artists", response_model=List[UserResponse])
+def get_artists(db: Session = Depends(get_db)):
+    """Get all users with artist role."""
+    return UserService.get_all_users(db, role="artist")
+
 @router.get("/me/{user_id}", response_model=UserResponse)
 def get_user_profile(user_id: int, db: Session = Depends(get_db)):
     """Get user's profile by ID."""
