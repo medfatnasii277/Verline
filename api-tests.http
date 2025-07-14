@@ -1,0 +1,347 @@
+### Art Gallery API Tests
+### Base URL
+@baseUrl = http://localhost:8000
+
+### Variables for test data
+@testUsername = testartist
+@testPassword = testpass123
+@testEmail = testartist@example.com
+@token = {{login.response.body.access_token}}
+
+### ==============================================
+### AUTHENTICATION ENDPOINTS
+### ==============================================
+
+### 1. Register a new artist user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{testUsername}}",
+  "email": "{{testEmail}}",
+  "password": "{{testPassword}}",
+  "full_name": "Test Artist",
+  "role": "artist",
+  "bio": "I am a test artist who loves creating digital masterpieces."
+}
+
+### 2. Register a new enthusiast user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testenthusiast",
+  "email": "testenthusiast@example.com",
+  "password": "testpass123",
+  "full_name": "Test Enthusiast",
+  "role": "enthusiast",
+  "bio": "I am an art enthusiast who loves discovering new artists."
+}
+
+### 3. Login and save token
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{testUsername}}",
+  "password": "{{testPassword}}"
+}
+
+### ==============================================
+### USER ENDPOINTS
+### ==============================================
+
+### 4. Get current user profile (requires authentication)
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+
+### 5. Update user profile
+PUT {{baseUrl}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "full_name": "Updated Test Artist",
+  "email": "{{testEmail}}",
+  "bio": "I am an updated test artist with new inspiration!"
+}
+
+### 6. Get all users (public endpoint)
+GET {{baseUrl}}/users/
+
+### 7. Get user by ID
+GET {{baseUrl}}/users/1
+
+### 8. Get user statistics (for artists)
+GET {{baseUrl}}/users/1/stats
+
+### ==============================================
+### CATEGORY ENDPOINTS
+### ==============================================
+
+### 9. Create a new category (artist only)
+POST {{baseUrl}}/categories/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Abstract Art",
+  "description": "Abstract artworks that challenge conventional representation"
+}
+
+### 10. Create another category
+POST {{baseUrl}}/categories/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Portrait",
+  "description": "Beautiful portrait paintings capturing human essence"
+}
+
+### 11. Get all categories
+GET {{baseUrl}}/categories/
+
+### 12. Get category by ID
+GET {{baseUrl}}/categories/1
+
+### 13. Update category (artist only)
+PUT {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Modern Abstract Art",
+  "description": "Contemporary abstract artworks that push creative boundaries"
+}
+
+### 14. Delete category (artist only)
+DELETE {{baseUrl}}/categories/2
+Authorization: Bearer {{token}}
+
+### ==============================================
+### PAINTING ENDPOINTS
+### ==============================================
+
+### 15. Upload a new painting (artist only)
+POST {{baseUrl}}/paintings/
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="title"
+
+Sunset Dreams
+------WebKitFormBoundary
+Content-Disposition: form-data; name="description"
+
+A beautiful abstract representation of sunset over the mountains
+------WebKitFormBoundary
+Content-Disposition: form-data; name="category_id"
+
+1
+------WebKitFormBoundary
+Content-Disposition: form-data; name="price"
+
+299.99
+------WebKitFormBoundary
+Content-Disposition: form-data; name="image"; filename="test-image.jpg"
+Content-Type: image/jpeg
+
+< ./test-assets/sample-painting.jpg
+------WebKitFormBoundary--
+
+### 16. Get all paintings (with optional filters)
+GET {{baseUrl}}/paintings/
+
+### 17. Get paintings with category filter
+GET {{baseUrl}}/paintings/?category_id=1
+
+### 18. Get paintings with search
+GET {{baseUrl}}/paintings/?search=sunset
+
+### 19. Get paintings with pagination
+GET {{baseUrl}}/paintings/?skip=0&limit=10
+
+### 20. Get painting by ID
+GET {{baseUrl}}/paintings/1
+
+### 21. Update painting (artist only - owner or admin)
+PUT {{baseUrl}}/paintings/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Sunset Dreams",
+  "description": "An even more beautiful abstract representation of sunset",
+  "category_id": 1,
+  "price": 350.00
+}
+
+### 22. Delete painting (artist only - owner)
+DELETE {{baseUrl}}/paintings/1
+Authorization: Bearer {{token}}
+
+### ==============================================
+### RATING ENDPOINTS
+### ==============================================
+
+### 23. Rate a painting (any authenticated user)
+POST {{baseUrl}}/ratings/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "painting_id": 1,
+  "rating": 5
+}
+
+### 24. Update rating
+PUT {{baseUrl}}/ratings/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rating": 4
+}
+
+### 25. Get all ratings for a painting
+GET {{baseUrl}}/paintings/1/ratings
+
+### 26. Delete rating (user can only delete their own)
+DELETE {{baseUrl}}/ratings/1
+Authorization: Bearer {{token}}
+
+### ==============================================
+### COMMENT ENDPOINTS
+### ==============================================
+
+### 27. Add comment to painting (any authenticated user)
+POST {{baseUrl}}/comments/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "painting_id": 1,
+  "content": "This is absolutely stunning! The colors are mesmerizing."
+}
+
+### 28. Get all comments for a painting
+GET {{baseUrl}}/paintings/1/comments
+
+### 29. Update comment (user can only update their own)
+PUT {{baseUrl}}/comments/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "This is absolutely breathtaking! The colors and composition are truly mesmerizing."
+}
+
+### 30. Delete comment (user can only delete their own)
+DELETE {{baseUrl}}/comments/1
+Authorization: Bearer {{token}}
+
+### ==============================================
+### ADMIN/ADVANCED ENDPOINTS
+### ==============================================
+
+### 31. Get user's own paintings (artist only)
+GET {{baseUrl}}/users/me/paintings
+Authorization: Bearer {{token}}
+
+### 32. Get user's ratings
+GET {{baseUrl}}/users/me/ratings
+Authorization: Bearer {{token}}
+
+### 33. Get user's comments
+GET {{baseUrl}}/users/me/comments
+Authorization: Bearer {{token}}
+
+### ==============================================
+### ERROR TESTING
+### ==============================================
+
+### 34. Test unauthorized access
+GET {{baseUrl}}/users/me
+
+### 35. Test invalid token
+GET {{baseUrl}}/users/me
+Authorization: Bearer invalid_token_here
+
+### 36. Test invalid credentials
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "nonexistent",
+  "password": "wrongpassword"
+}
+
+### ==============================================
+### HEALTH CHECK
+### ==============================================
+
+### 37. API Health Check
+GET {{baseUrl}}/
+
+### 38. API Documentation
+GET {{baseUrl}}/docs
+
+### ==============================================
+### BULK TEST DATA SETUP
+### ==============================================
+
+### 39. Create multiple test categories
+POST {{baseUrl}}/categories/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Landscape",
+  "description": "Beautiful landscape paintings"
+}
+
+###
+POST {{baseUrl}}/categories/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Still Life",
+  "description": "Classic still life compositions"
+}
+
+###
+POST {{baseUrl}}/categories/
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Impressionist",
+  "description": "Impressionist style artworks"
+}
+
+### ==============================================
+### NOTES
+### ==============================================
+
+### Token Management:
+### 1. First run the login request (#3) to get a token
+### 2. The token will be automatically saved as {{token}} variable
+### 3. Use {{token}} in Authorization headers for protected endpoints
+### 
+### File Upload Notes:
+### - For painting uploads (#15), you need to create a test-assets folder
+### - Add a sample image file named sample-painting.jpg
+### - Or modify the file path to point to an existing image
+###
+### Error Testing:
+### - Tests #34-36 are designed to fail and show error responses
+### - These help verify proper error handling
+###
+### Variables:
+### - Modify @testUsername, @testPassword, @testEmail at the top as needed
+### - @baseUrl can be changed for different environments
+### - @token is automatically populated from login response

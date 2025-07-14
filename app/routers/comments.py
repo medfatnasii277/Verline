@@ -4,16 +4,14 @@ from typing import List
 from app.database import get_db
 from app.schemas import CommentCreate, CommentUpdate, CommentResponse
 from app.crud import CommentService, PaintingService
-from app.auth import get_current_user
-from app.models import User
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
 def create_comment(
     comment: CommentCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int,  # Now passed as parameter
+    db: Session = Depends(get_db)
 ):
     """Create a new comment on a painting."""
     # Check if painting exists
@@ -24,7 +22,7 @@ def create_comment(
             detail="Painting not found"
         )
     
-    return CommentService.create_comment(db, comment, current_user.id)
+    return CommentService.create_comment(db, comment, user_id)
 
 @router.get("/painting/{painting_id}", response_model=List[CommentResponse])
 def get_painting_comments(
@@ -48,12 +46,12 @@ def get_painting_comments(
 def update_comment(
     comment_id: int,
     comment_update: CommentUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int,  # Pass as parameter
+    db: Session = Depends(get_db)
 ):
     """Update a comment (owner only)."""
     updated_comment = CommentService.update_comment(
-        db, comment_id, comment_update, current_user.id
+        db, comment_id, comment_update, user_id
     )
     if not updated_comment:
         raise HTTPException(
@@ -65,11 +63,11 @@ def update_comment(
 @router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_comment(
     comment_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int,  # Pass as parameter
+    db: Session = Depends(get_db)
 ):
     """Delete a comment (owner only)."""
-    success = CommentService.delete_comment(db, comment_id, current_user.id)
+    success = CommentService.delete_comment(db, comment_id, user_id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

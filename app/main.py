@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBearer
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import engine, Base
 from app.routers import auth, users, categories, paintings, ratings, comments
@@ -10,14 +11,37 @@ import os
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Create FastAPI app
+# Create FastAPI app with proper OpenAPI configuration
 app = FastAPI(
     title="Art Gallery API",
-    description="A comprehensive backend API for an art gallery platform where painters can upload their work and visitors can view, rate, and comment on paintings.",
+    description="""
+    A comprehensive backend API for an art gallery platform where artists can upload their work 
+    and enthusiasts can view, rate, and comment on paintings.
+    
+    ## Authentication
+    
+    Most endpoints require authentication using Bearer tokens:
+    1. Register a new account using `/auth/register`
+    2. Login using `/auth/login` to get an access token
+    3. Include the token in the Authorization header: `Bearer YOUR_TOKEN_HERE`
+    
+    ## User Roles
+    
+    - **Artist**: Can upload paintings, create categories, and do everything enthusiasts can do
+    - **Enthusiast**: Can view paintings, rate them, and leave comments
+    
+    ## Usage
+    
+    You can test all endpoints using the interactive documentation below or use the provided 
+    HTTP file (`api-tests.http`) for comprehensive testing with tools like REST Client.
+    """,
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Configure security scheme for OpenAPI
+security = HTTPBearer()
 
 # CORS middleware
 app.add_middleware(

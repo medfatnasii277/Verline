@@ -1,0 +1,107 @@
+### Quick Start API Tests - Art Gallery
+### No external files required for basic testing
+
+### Base URL and Variables
+@baseUrl = http://localhost:8000
+@testUsername = testartist
+@testPassword = testpass123
+@testEmail = testartist@example.com
+
+### ==============================================
+### STEP 1: Register & Login
+### ==============================================
+
+### 1. Register new artist account
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{testUsername}}",
+  "email": "{{testEmail}}",
+  "password": "{{testPassword}}",
+  "full_name": "Test Artist",
+  "role": "artist",
+  "bio": "I am a test artist."
+}
+
+### 2. Login and get token (SAVE THIS TOKEN!)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{testUsername}}",
+  "password": "{{testPassword}}"
+}
+
+### COPY THE TOKEN FROM ABOVE RESPONSE AND USE IT BELOW
+### Replace YOUR_TOKEN_HERE with the actual token
+
+### ==============================================
+### STEP 2: Test Protected Endpoints
+### ==============================================
+
+### 3. Get your profile (replace YOUR_TOKEN_HERE)
+GET {{baseUrl}}/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0YXJ0aXN0IiwiZXhwIjoxNzUyNDQ5NjgzfQ.CKKlk-DpWrht-by7opQMMlHYKz_FIRKS573-59RFHpM
+
+### 4. Create a category
+POST {{baseUrl}}/categories/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0YXJ0aXN0IiwiZXhwIjoxNzUyNDQ5NjgzfQ.CKKlk-DpWrht-by7opQMMlHYKz_FIRKS573-59RFHpM
+Content-Type: application/json
+
+{
+  "name": "Abstract Art",
+  "description": "Abstract artworks that challenge conventional representation"
+}
+
+### 5. Get all categories
+GET {{baseUrl}}/categories/
+
+### 6. Update your profile
+PUT {{baseUrl}}/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0YXJ0aXN0IiwiZXhwIjoxNzUyNDQ5NjgzfQ.CKKlk-DpWrht-by7opQMMlHYKz_FIRKS573-59RFHpM
+Content-Type: application/json
+
+{
+  "full_name": "Updated Test Artist",
+  "email": "{{testEmail}}",
+  "bio": "Updated bio for testing"
+}
+
+### ==============================================
+### STEP 3: Public Endpoints (No Auth Required)
+### ==============================================
+
+### 7. API Health Check
+GET {{baseUrl}}/
+
+### 8. Get all users
+GET {{baseUrl}}/users/
+
+### 9. API Documentation
+GET {{baseUrl}}/docs
+
+### ==============================================
+### INSTRUCTIONS:
+### ==============================================
+
+### HOW TO USE:
+### 1. Start your FastAPI server: uvicorn app.main:app --reload
+### 2. Run test #1 to register
+### 3. Run test #2 to login
+### 4. COPY the access_token from the response
+### 5. Replace "YOUR_TOKEN_HERE" in tests #3, #4, #6 with your actual token
+### 6. Run the remaining tests
+
+### USING THE TOKEN:
+### After login, you'll get a response like:
+### {
+###   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+###   "token_type": "bearer"
+### }
+### Copy the access_token value and use it in Authorization headers
+
+### FOR VS CODE USERS:
+### Install the "REST Client" extension to run these tests directly in VS Code
+### Each ### separates individual requests

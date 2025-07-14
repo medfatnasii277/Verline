@@ -7,7 +7,6 @@ from app.schemas import (
     PaginatedResponse, PaintingFilters, SortOptions
 )
 from app.crud import PaintingService
-from app.auth import get_current_user, get_current_artist
 from app.models import User
 from app.utils import save_image, delete_image_files
 
@@ -23,9 +22,9 @@ async def create_painting(
     dimensions: Optional[str] = Form(None),
     medium: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
+    artist_id: int = Form(...),  # Now require artist_id as form parameter
     image: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_artist)
+    db: Session = Depends(get_db)
 ):
     """Create a new painting with image upload."""
     # Save uploaded image
@@ -46,7 +45,7 @@ async def create_painting(
         
         # Create painting in database
         painting = PaintingService.create_painting(
-            db, painting_data, current_user.id, image_url, thumbnail_url
+            db, painting_data, artist_id, image_url, thumbnail_url
         )
         
         return painting
@@ -93,16 +92,17 @@ def get_paintings(
         pages=(total + limit - 1) // limit
     )
 
-@router.get("/my-paintings", response_model=PaginatedResponse)
-def get_my_paintings(
+@router.get("/my-paintings/{artist_id}", response_model=PaginatedResponse)
+def get_artist_paintings(
+    artist_id: int,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=50),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_artist)
+    db: Session = Depends(get_db)
 ):
-    """Get current user's paintings."""
+    """Get paintings by specific artist."""
     skip = (page - 1) * limit
-    paintings, total = PaintingService.get_user_paintings(db, current_user.id, skip, limit)
+    filters = PaintingFilters(artist_id=artist_id)
+    paintings, total = PaintingService.get_paintings(db, skip, limit, filters)
     
     return PaginatedResponse(
         items=paintings,
@@ -131,12 +131,12 @@ def get_painting(painting_id: int, db: Session = Depends(get_db)):
 def update_painting(
     painting_id: int,
     painting_update: PaintingUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_artist)
+    artist_id: int,  # Pass as parameter
+    db: Session = Depends(get_db)
 ):
     """Update a painting (owner only)."""
     updated_painting = PaintingService.update_painting(
-        db, painting_id, painting_update, current_user.id
+        db, painting_id, painting_update, artist_id
     )
     if not updated_painting:
         raise HTTPException(
@@ -148,20 +148,20 @@ def update_painting(
 @router.delete("/{painting_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_painting(
     painting_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_artist)
+    artist_id: int,  # Pass as parameter
+    db: Session = Depends(get_db)
 ):
     """Delete a painting (owner only)."""
     # Get painting to retrieve image URLs for cleanup
     painting = PaintingService.get_painting(db, painting_id)
-    if not painting or painting.artist_id != current_user.id:
+    if not painting or painting.artist_id != artist_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Painting not found or you don't have permission to delete it"
         )
     
     # Delete from database
-    success = PaintingService.delete_painting(db, painting_id, current_user.id)
+    success = PaintingService.delete_painting(db, painting_id, artist_id)
     if success:
         # Clean up image files
         delete_image_files(painting.image_url, painting.thumbnail_url)

@@ -1,0 +1,263 @@
+### Art Gallery API Tests (No Auth Required)
+### Base URL
+@baseUrl = http://localhost:8000
+
+### Test Users (Use these IDs in requests)
+@artistUserId = 1
+@enthusiastUserId = 2
+
+### ==============================================
+### AUTHENTICATION ENDPOINTS (Still Available)
+### ==============================================
+
+### 1. Register a new artist user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testartist2",
+  "email": "testartist2@example.com",
+  "password": "testpass123",
+  "full_name": "Test Artist 2",
+  "role": "artist",
+  "bio": "I am a test artist who loves creating digital masterpieces."
+}
+
+### 2. Register a new enthusiast user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testenthusiast2",
+  "email": "testenthusiast2@example.com",
+  "password": "testpass123",
+  "full_name": "Test Enthusiast 2",
+  "role": "enthusiast",
+  "bio": "I am an art enthusiast who loves discovering new artists."
+}
+
+### 3. Login (Optional - no auth required for other endpoints)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testartist2",
+  "password": "testpass123"
+}
+
+### ==============================================
+### USER ENDPOINTS (No Auth Required)
+### ==============================================
+
+### 4. Get user profile by ID
+GET {{baseUrl}}/users/me/{{artistUserId}}
+
+### 5. Update user profile
+PUT {{baseUrl}}/users/me/{{artistUserId}}
+Content-Type: application/json
+
+{
+  "full_name": "Updated Test Artist",
+  "email": "testartist@example.com",
+  "bio": "I am an updated test artist with new inspiration!"
+}
+
+### 6. Get all users
+GET {{baseUrl}}/users/
+
+### 7. Get user by ID
+GET {{baseUrl}}/users/{{artistUserId}}
+
+### 8. Get user statistics (for artists)
+GET {{baseUrl}}/users/{{artistUserId}}/stats
+
+### ==============================================
+### CATEGORY ENDPOINTS (No Auth Required)
+### ==============================================
+
+### 9. Create a new category
+POST {{baseUrl}}/categories/
+Content-Type: application/json
+
+{
+  "name": "Abstract Art",
+  "description": "Abstract artworks that challenge conventional representation"
+}
+
+### 10. Create another category
+POST {{baseUrl}}/categories/
+Content-Type: application/json
+
+{
+  "name": "Portrait",
+  "description": "Beautiful portrait paintings capturing human essence"
+}
+
+### 11. Get all categories
+GET {{baseUrl}}/categories/
+
+### 12. Get category by ID
+GET {{baseUrl}}/categories/1
+
+### 13. Update category
+PUT {{baseUrl}}/categories/1
+Content-Type: application/json
+
+{
+  "name": "Modern Abstract Art",
+  "description": "Contemporary abstract artworks that push creative boundaries"
+}
+
+### 14. Delete category
+DELETE {{baseUrl}}/categories/2
+
+### ==============================================
+### PAINTING ENDPOINTS (No Auth Required)
+### ==============================================
+
+### 15. Upload a new painting (specify artist_id in form)
+POST {{baseUrl}}/paintings/
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="title"
+
+Sunset Dreams
+------WebKitFormBoundary
+Content-Disposition: form-data; name="description"
+
+A beautiful abstract representation of sunset over the mountains
+------WebKitFormBoundary
+Content-Disposition: form-data; name="category_id"
+
+1
+------WebKitFormBoundary
+Content-Disposition: form-data; name="price"
+
+299.99
+------WebKitFormBoundary
+Content-Disposition: form-data; name="artist_id"
+
+{{artistUserId}}
+------WebKitFormBoundary
+Content-Disposition: form-data; name="image"; filename="test-image.jpg"
+Content-Type: image/jpeg
+
+< ./test-assets/sample-painting.jpg
+------WebKitFormBoundary--
+
+### 16. Get all paintings
+GET {{baseUrl}}/paintings/
+
+### 17. Get paintings with category filter
+GET {{baseUrl}}/paintings/?category_id=1
+
+### 18. Get paintings with search
+GET {{baseUrl}}/paintings/?search=sunset
+
+### 19. Get paintings with pagination
+GET {{baseUrl}}/paintings/?skip=0&limit=10
+
+### 20. Get painting by ID
+GET {{baseUrl}}/paintings/1
+
+### 21. Get artist's paintings
+GET {{baseUrl}}/paintings/my-paintings/{{artistUserId}}
+
+### 22. Update painting
+PUT {{baseUrl}}/paintings/1
+Content-Type: application/json
+
+{
+  "title": "Updated Sunset Dreams",
+  "description": "An even more beautiful abstract representation of sunset",
+  "category_id": 1,
+  "price": 350.00
+}
+
+### 23. Delete painting
+DELETE {{baseUrl}}/paintings/1
+
+### ==============================================
+### RATING ENDPOINTS (No Auth Required)
+### ==============================================
+
+### 24. Rate a painting (specify user_id)
+POST {{baseUrl}}/ratings/?user_id={{enthusiastUserId}}
+Content-Type: application/json
+
+{
+  "painting_id": 1,
+  "rating": 5
+}
+
+### 25. Update rating
+PUT {{baseUrl}}/ratings/1
+Content-Type: application/json
+
+{
+  "rating": 4
+}
+
+### 26. Get all ratings for a painting
+GET {{baseUrl}}/paintings/1/ratings
+
+### 27. Delete rating
+DELETE {{baseUrl}}/ratings/1
+
+### ==============================================
+### COMMENT ENDPOINTS (No Auth Required)
+### ==============================================
+
+### 28. Add comment to painting (specify user_id)
+POST {{baseUrl}}/comments/?user_id={{enthusiastUserId}}
+Content-Type: application/json
+
+{
+  "painting_id": 1,
+  "content": "This is absolutely stunning! The colors are mesmerizing."
+}
+
+### 29. Get all comments for a painting
+GET {{baseUrl}}/paintings/1/comments
+
+### 30. Update comment
+PUT {{baseUrl}}/comments/1
+Content-Type: application/json
+
+{
+  "content": "This is absolutely breathtaking! The colors and composition are truly mesmerizing."
+}
+
+### 31. Delete comment
+DELETE {{baseUrl}}/comments/1
+
+### ==============================================
+### HEALTH CHECK
+### ==============================================
+
+### 32. API Health Check
+GET {{baseUrl}}/
+
+### 33. API Documentation
+GET {{baseUrl}}/docs
+
+### ==============================================
+### NOTES
+### ==============================================
+
+### No Authentication Required:
+### - All endpoints are now accessible without tokens
+### - User IDs are passed as parameters where needed
+### - Registration and login still work but aren't required
+### 
+### User IDs:
+### - Change @artistUserId and @enthusiastUserId at the top
+### - Use actual user IDs from your database
+### - Artists should be used for painting uploads
+### - Any user can rate/comment on paintings
+###
+### File Upload Notes:
+### - For painting uploads, you need a test-assets folder
+### - Add a sample image file named sample-painting.jpg
+### - Or modify the file path to point to an existing image

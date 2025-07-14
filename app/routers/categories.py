@@ -4,18 +4,15 @@ from typing import List
 from app.database import get_db
 from app.schemas import CategoryCreate, CategoryResponse
 from app.crud import CategoryService
-from app.auth import get_current_artist
-from app.models import User
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
     category: CategoryCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_artist)
+    db: Session = Depends(get_db)
 ):
-    """Create a new category (Artist only)."""
+    """Create a new category."""
     return CategoryService.create_category(db, category)
 
 @router.get("/", response_model=List[CategoryResponse])
