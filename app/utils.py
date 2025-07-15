@@ -29,10 +29,10 @@ def generate_unique_filename(original_filename: str) -> str:
     unique_id = str(uuid.uuid4())
     return f"{unique_id}.{file_extension}"
 
-async def save_image(file: UploadFile, subfolder: str = "paintings") -> tuple[str, str]:
+async def save_image(file: UploadFile, subfolder: str = "paintings", base_url: str = "http://localhost:8000") -> tuple[str, str]:
     """
     Save uploaded image and create thumbnail.
-    Returns tuple of (image_path, thumbnail_path).
+    Returns tuple of (image_path, thumbnail_path) as absolute URLs.
     """
     # Validate the image
     validate_image(file)
@@ -73,9 +73,9 @@ async def save_image(file: UploadFile, subfolder: str = "paintings") -> tuple[st
             detail="Invalid image file"
         )
     
-    # Return relative paths for database storage
-    image_url = f"/uploads/{subfolder}/{filename}"
-    thumbnail_url = f"/uploads/{subfolder}/thumbnails/thumb_{filename}"
+    # Return absolute URLs for frontend consumption
+    image_url = f"{base_url}/uploads/{subfolder}/{filename}"
+    thumbnail_url = f"{base_url}/uploads/{subfolder}/thumbnails/thumb_{filename}"
     
     return image_url, thumbnail_url
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, field_validator
 from typing import Optional, List, Generic, TypeVar
 from datetime import datetime
 from enum import Enum
@@ -118,6 +118,14 @@ class PaintingResponse(PaintingBase):
     artist: UserResponse
     category: Optional[CategoryResponse] = None
     
+    @field_validator('image_url', 'thumbnail_url', mode='before')
+    @classmethod
+    def make_absolute_url(cls, v):
+        """Convert relative URLs to absolute URLs for frontend consumption."""
+        if v and v.startswith('/uploads/'):
+            return f"http://localhost:8000{v}"
+        return v
+    
     class Config:
         from_attributes = True
 
@@ -128,6 +136,14 @@ class PaintingListResponse(BaseModel):
     image_url: str
     thumbnail_url: Optional[str] = None
     average_rating: float = 0.0
+    
+    @field_validator('image_url', 'thumbnail_url', mode='before')
+    @classmethod
+    def make_absolute_url(cls, v):
+        """Convert relative URLs to absolute URLs for frontend consumption."""
+        if v and v.startswith('/uploads/'):
+            return f"http://localhost:8000{v}"
+        return v
     rating_count: int = 0
     price: Optional[float] = None
     artist: UserResponse

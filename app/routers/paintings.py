@@ -28,7 +28,7 @@ async def create_painting(
 ):
     """Create a new painting with image upload."""
     # Save uploaded image
-    image_url, thumbnail_url = await save_image(image, "paintings")
+    image_url, thumbnail_url = await save_image(image, "paintings", "http://localhost:8000")
     
     try:
         # Create painting data
