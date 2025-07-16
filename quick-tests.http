@@ -74,6 +74,37 @@ GET {{baseUrl}}/docs
 GET {{baseUrl}}/redoc
 
 ### ==============================================
+### STEP 3: Ratings and Comments Testing
+### ==============================================
+
+### 13. Get ratings for a painting
+GET {{baseUrl}}/ratings/painting/1
+
+### 14. Create/Update a rating
+POST {{baseUrl}}/ratings/?user_id={{testUserId}}
+Content-Type: application/json
+
+{
+  "painting_id": 1,
+  "rating": 5
+}
+
+### 15. Get user's rating for a painting
+GET {{baseUrl}}/ratings/user/{{testUserId}}/painting/1
+
+### 16. Get comments for a painting
+GET {{baseUrl}}/comments/painting/1
+
+### 17. Create a comment
+POST {{baseUrl}}/comments/?user_id={{testUserId}}
+Content-Type: application/json
+
+{
+  "painting_id": 1,
+  "content": "Beautiful artwork! Love the color composition."
+}
+
+### ==============================================
 ### INSTRUCTIONS:
 ### ==============================================
 
@@ -96,7 +127,7 @@ GET {{baseUrl}}/redoc
 ### FRONTEND TESTING:
 ### 1. Start frontend: npm start
 ### 2. Use demo accounts:
-###    - Artists: admin, painter1, test (real database users with paintings)
-###    - Enthusiasts: art_lover, gallery_visitor
+###    - Artist: admin (real database user with paintings)
+###    - Enthusiast: art_lover (can rate and comment on paintings)
 ### 3. Click any demo account to login instantly
 ### 4. All API limits are now set to max 50 items per request

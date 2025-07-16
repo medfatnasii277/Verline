@@ -10,7 +10,7 @@ router = APIRouter(prefix="/comments", tags=["Comments"])
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
 def create_comment(
     comment: CommentCreate,
-    user_id: int,  # Now passed as parameter
+    user_id: int = Query(..., description="User ID who is commenting"),
     db: Session = Depends(get_db)
 ):
     """Create a new comment on a painting."""
@@ -28,7 +28,7 @@ def create_comment(
 def get_painting_comments(
     painting_id: int,
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=50),
     db: Session = Depends(get_db)
 ):
     """Get comments for a painting."""
@@ -46,7 +46,7 @@ def get_painting_comments(
 def update_comment(
     comment_id: int,
     comment_update: CommentUpdate,
-    user_id: int,  # Pass as parameter
+    user_id: int = Query(..., description="User ID updating the comment"),
     db: Session = Depends(get_db)
 ):
     """Update a comment (owner only)."""
@@ -63,7 +63,7 @@ def update_comment(
 @router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_comment(
     comment_id: int,
-    user_id: int,  # Pass as parameter
+    user_id: int = Query(..., description="User ID deleting the comment"),
     db: Session = Depends(get_db)
 ):
     """Delete a comment (owner only)."""

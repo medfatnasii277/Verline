@@ -301,6 +301,11 @@ class RatingService:
         ).first()
     
     @staticmethod
+    def get_painting_ratings(db: Session, painting_id: int) -> List[Rating]:
+        """Get all ratings for a specific painting"""
+        return db.query(Rating).filter(Rating.painting_id == painting_id).all()
+    
+    @staticmethod
     def _update_painting_rating_stats(db: Session, painting_id: int) -> None:
         # Calculate new average rating and count
         result = db.query(
