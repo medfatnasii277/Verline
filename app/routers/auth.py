@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy.orm import Session
 from datetime import timedelta
@@ -16,9 +16,9 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return UserService.create_user(db, user)
 
 @router.post("/login", response_model=Token)
-def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+def login(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     """Login user and return access token."""
-    user = authenticate_user(db, user_credentials.username, user_credentials.password)
+    user = authenticate_user(db, username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

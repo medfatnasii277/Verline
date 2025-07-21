@@ -5,8 +5,8 @@ from app.database import Base
 import enum
 
 class UserRole(enum.Enum):
-    ENTHUSIAST = "enthusiast"
-    ARTIST = "artist"
+    enthusiast = "enthusiast"
+    artist = "artist"
 
 class PaintingStatus(enum.Enum):
     DRAFT = "draft"
@@ -21,7 +21,7 @@ class User(Base):
     username = Column(String(100), unique=True, index=True, nullable=False)
     full_name = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.ENTHUSIAST, nullable=False)
+    role = Column(Enum(UserRole), default=UserRole.enthusiast, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     bio = Column(Text, nullable=True)
     profile_picture = Column(String(500), nullable=True)

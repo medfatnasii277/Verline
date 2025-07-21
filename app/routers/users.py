@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
-from app.schemas import UserResponse, UserUpdate, PaginationParams, PaginatedResponse
+from app.schemas import UserResponse, UserUpdate, PaginationParams, PaginatedResponse, PaintingResponse
 from app.crud import UserService, PaintingService
 from app.models import User
+from app.auth import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -58,7 +59,7 @@ def get_user_profile(user_id: int, db: Session = Depends(get_db)):
         )
     return user
 
-@router.get("/{user_id}/paintings")
+@router.get("/{user_id}/paintings", response_model=PaginatedResponse[PaintingResponse])
 def get_user_paintings(
     user_id: int,
     page: int = Query(1, ge=1),
@@ -77,8 +78,8 @@ def get_user_paintings(
     skip = (page - 1) * limit
     paintings, total = PaintingService.get_user_paintings(db, user_id, skip, limit)
     
-    return PaginatedResponse(
-        items=paintings,
+    return PaginatedResponse[PaintingResponse](
+        items=[PaintingResponse.model_validate(p) for p in paintings],
         total=total,
         page=page,
         limit=limit,

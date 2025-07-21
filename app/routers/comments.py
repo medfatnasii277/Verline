@@ -1,28 +1,48 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 from app.database import get_db
 from app.schemas import CommentCreate, CommentUpdate, CommentResponse
 from app.crud import CommentService, PaintingService
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
+class CommentCreateRequest(BaseModel):
+    painting_id: int
+    user_id: int
+    content: str
+    parent_id: Optional[int] = None
+
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
 def create_comment(
-    comment: CommentCreate,
-    user_id: int = Query(..., description="User ID who is commenting"),
+    comment_request: CommentCreateRequest,
     db: Session = Depends(get_db)
 ):
     """Create a new comment on a painting."""
+    # Validate content is not empty
+    if not comment_request.content or not comment_request.content.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Comment content cannot be empty"
+        )
+    
     # Check if painting exists
-    painting = PaintingService.get_painting(db, comment.painting_id)
+    painting = PaintingService.get_painting(db, comment_request.painting_id)
     if not painting:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Painting not found"
         )
     
-    return CommentService.create_comment(db, comment, user_id)
+    # Create CommentCreate object for the service
+    comment = CommentCreate(
+        painting_id=comment_request.painting_id,
+        content=comment_request.content,
+        parent_id=comment_request.parent_id
+    )
+    
+    return CommentService.create_comment(db, comment, comment_request.user_id)
 
 @router.get("/painting/{painting_id}", response_model=List[CommentResponse])
 def get_painting_comments(
@@ -41,6 +61,30 @@ def get_painting_comments(
         )
     
     return CommentService.get_painting_comments(db, painting_id, skip, limit)
+
+@router.get("/user/{user_id}", response_model=List[CommentResponse])
+def get_user_comments(
+    user_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Get comments by a user."""
+    return CommentService.get_user_comments(db, user_id, skip, limit)
+
+@router.get("/{comment_id}", response_model=CommentResponse)
+def get_comment(
+    comment_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get a specific comment by ID."""
+    comment = CommentService.get_comment(db, comment_id)
+    if not comment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comment not found"
+        )
+    return comment
 
 @router.put("/{comment_id}", response_model=CommentResponse)
 def update_comment(

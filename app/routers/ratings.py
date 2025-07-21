@@ -1,21 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel, Field
 from app.database import get_db
 from app.schemas import RatingCreate, RatingResponse
 from app.crud import RatingService, PaintingService
+from app.auth import get_current_user
+from app.models import User
 
 router = APIRouter(prefix="/ratings", tags=["Ratings"])
 
 @router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
 def create_or_update_rating(
-    rating: RatingCreate,
-    user_id: int = Query(..., description="User ID who is rating"),
+    rating_request: RatingCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Create or update a rating for a painting."""
     # Check if painting exists
-    painting = PaintingService.get_painting(db, rating.painting_id)
+    painting = PaintingService.get_painting(db, rating_request.painting_id)
     if not painting:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -23,13 +26,13 @@ def create_or_update_rating(
         )
     
     # Prevent artists from rating their own paintings
-    if painting.artist_id == user_id:
+    if painting.artist_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot rate your own painting"
         )
     
-    return RatingService.create_or_update_rating(db, rating, user_id)
+    return RatingService.create_or_update_rating(db, rating_request, current_user.id)
 
 @router.get("/{painting_id}/rating/{user_id}", response_model=RatingResponse)
 def get_user_rating(
@@ -61,14 +64,59 @@ def get_painting_ratings(
     
     return RatingService.get_painting_ratings(db, painting_id)
 
-@router.get("/user/{user_id}/painting/{painting_id}")
-def get_user_rating_for_painting(
-    user_id: int,
+@router.get("/my-ratings", response_model=List[RatingResponse])
+def get_user_ratings(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all ratings by the current user."""
+    return RatingService.get_user_ratings(db, current_user.id)
+
+class RatingUpdate(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Rating value between 1 and 5")
+
+@router.put("/{rating_id}", response_model=RatingResponse)  
+def update_rating(
+    rating_id: int,
+    rating_update: RatingUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update a rating."""
+    updated_rating = RatingService.update_rating(db, rating_id, rating_update.rating, current_user.id)
+    if not updated_rating:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rating not found"
+        )
+    return updated_rating
+
+@router.delete("/{rating_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_rating(
+    rating_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a rating."""
+    success = RatingService.delete_rating(db, rating_id, current_user.id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rating not found"
+        )
+
+@router.get("/painting/{painting_id}/average")
+def get_painting_average_rating(
     painting_id: int,
     db: Session = Depends(get_db)
 ):
-    """Get a user's rating for a specific painting."""
-    rating = RatingService.get_user_rating(db, user_id, painting_id)
-    if not rating:
-        return {"rating": None}
-    return {"rating": rating.score}
+    """Get average rating for a painting."""
+    painting = PaintingService.get_painting(db, painting_id)
+    if not painting:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Painting not found"
+        )
+    
+    avg_data = RatingService.get_painting_average_rating(db, painting_id)
+    return avg_data

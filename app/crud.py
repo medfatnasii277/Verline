@@ -43,6 +43,10 @@ class UserService:
         return db.query(User).filter(User.id == user_id).first()
     
     @staticmethod
+    def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+        return db.query(User).filter(User.id == user_id).first()
+    
+    @staticmethod
     def get_user_by_username(db: Session, username: str) -> Optional[User]:
         return db.query(User).filter(User.username == username).first()
     
@@ -93,6 +97,13 @@ class UserService:
 class CategoryService:
     @staticmethod
     def create_category(db: Session, category: CategoryCreate) -> Category:
+        # Validate category name is not empty or just whitespace
+        if not category.name or not category.name.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Category name cannot be empty"
+            )
+        
         # Check if category name already exists
         existing = db.query(Category).filter(Category.name == category.name).first()
         if existing:
@@ -125,12 +136,13 @@ class PaintingService:
         image_url: str, 
         thumbnail_url: str
     ) -> Painting:
+        from app.models import PaintingStatus
         db_painting = Painting(
             **painting.dict(),
             artist_id=artist_id,
             image_url=image_url,
             thumbnail_url=thumbnail_url,
-            status="published"  # Set status to published by default
+            status=PaintingStatus.PUBLISHED  # Set status to published by default
         )
         db.add(db_painting)
         db.commit()
@@ -322,6 +334,67 @@ class RatingService:
             Painting.rating_count: rating_count
         })
         db.commit()
+    
+    @staticmethod
+    def get_user_ratings(db: Session, user_id: int) -> List[Rating]:
+        """Get all ratings by a specific user"""
+        return db.query(Rating).filter(Rating.user_id == user_id).all()
+    
+    @staticmethod
+    def update_rating(db: Session, rating_id: int, rating_value: int, user_id: int) -> Optional[Rating]:
+        """Update a rating"""
+        rating = db.query(Rating).filter(
+            Rating.id == rating_id, 
+            Rating.user_id == user_id  # Ensure user can only update their own rating
+        ).first()
+        if not rating:
+            return None
+        
+        rating.rating = rating_value
+        db.commit()
+        db.refresh(rating)
+        
+        # Update painting stats
+        RatingService._update_painting_rating_stats(db, rating.painting_id)
+        return rating
+    
+    @staticmethod
+    def delete_rating(db: Session, rating_id: int, user_id: int) -> bool:
+        """Delete a rating"""
+        rating = db.query(Rating).filter(
+            Rating.id == rating_id,
+            Rating.user_id == user_id  # Ensure user can only delete their own rating
+        ).first()
+        if not rating:
+            return False
+        
+        painting_id = rating.painting_id
+        db.delete(rating)
+        db.commit()
+        
+        # Update painting stats
+        RatingService._update_painting_rating_stats(db, painting_id)
+        return True
+        
+        # Update painting stats
+        RatingService._update_painting_rating_stats(db, painting_id)
+        return True
+    
+    @staticmethod
+    def get_painting_average_rating(db: Session, painting_id: int) -> dict:
+        """Get average rating and count for a painting"""
+        result = db.query(
+            func.avg(Rating.rating).label('avg_rating'),
+            func.count(Rating.id).label('rating_count')
+        ).filter(Rating.painting_id == painting_id).first()
+        
+        avg_rating = float(result.avg_rating) if result.avg_rating else None
+        rating_count = result.rating_count or 0
+        
+        return {
+            "average_rating": round(avg_rating, 2) if avg_rating else None,
+            "total_ratings": rating_count
+        }
 
 # Comment CRUD operations
 class CommentService:
@@ -388,3 +461,18 @@ class CommentService:
         db.delete(db_comment)
         db.commit()
         return True
+    
+    @staticmethod
+    def get_comment(db: Session, comment_id: int) -> Optional[Comment]:
+        return db.query(Comment).filter(Comment.id == comment_id).first()
+    
+    @staticmethod
+    def get_user_comments(
+        db: Session, 
+        user_id: int,
+        skip: int = 0,
+        limit: int = 20
+    ) -> List[Comment]:
+        return db.query(Comment).filter(
+            Comment.user_id == user_id
+        ).offset(skip).limit(limit).all()

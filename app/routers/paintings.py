@@ -136,11 +136,38 @@ def get_painting(painting_id: int, db: Session = Depends(get_db)):
 @router.put("/{painting_id}", response_model=PaintingResponse)
 def update_painting(
     painting_id: int,
-    painting_update: PaintingUpdate,
-    artist_id: int,  # Pass as parameter
+    title: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    artist_id: int = Query(...),
+    price: Optional[float] = Form(None),
+    category_id: Optional[int] = Form(None),
+    year_created: Optional[int] = Form(None),
+    dimensions: Optional[str] = Form(None),
+    medium: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
     """Update a painting (owner only)."""
+    # Create PaintingUpdate object from form data
+    painting_update = PaintingUpdate(
+        title=title,
+        description=description,
+        price=price,
+        category_id=category_id,
+        year_created=year_created,
+        dimensions=dimensions,
+        medium=medium,
+        tags=tags
+    )
+    
+    # Handle image update if provided
+    if image:
+        # Process image upload similar to create_painting
+        image_url, thumbnail_url = save_painting_image(image)
+        painting_update.image_url = image_url
+        painting_update.thumbnail_url = thumbnail_url
+    
     updated_painting = PaintingService.update_painting(
         db, painting_id, painting_update, artist_id
     )
