@@ -83,6 +83,14 @@ def get_user_ratings(
     """Get all ratings by the current user."""
     return RatingService.get_user_ratings(db, current_user.id)
 
+@router.get("/my-paintings-ratings", response_model=List[RatingResponse])
+def get_my_paintings_ratings(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all ratings received on paintings by the current artist."""
+    return RatingService.get_artist_paintings_ratings(db, current_user.id)
+
 class RatingUpdate(BaseModel):
     rating: int = Field(..., ge=1, le=5, description="Rating value between 1 and 5")
 

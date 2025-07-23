@@ -10,6 +10,8 @@ export interface User {
   role: 'artist' | 'enthusiast';
   bio?: string;
   profile_picture?: string;
+  location?: string;
+  website?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -50,6 +52,7 @@ export interface Rating {
   user_id: number;
   user: User;
   painting_id: number;
+  painting?: Painting;
   rating: number; // 1-5
   created_at: string;
   updated_at: string;
@@ -60,6 +63,7 @@ export interface Comment {
   user_id: number;
   user: User;
   painting_id: number;
+  painting?: Painting;
   content: string;
   parent_id?: number;
   is_approved: boolean;
@@ -184,6 +188,25 @@ export const api = {
         body: JSON.stringify(data),
       });
       if (!response.ok) throw new Error(`Failed to update profile: ${response.statusText}`);
+      return response.json();
+    },
+
+    // Alias for consistency with frontend usage
+    update: async (userId: number, data: Partial<User>): Promise<User> => {
+      return api.users.updateProfile(userId, data);
+    },
+
+    uploadProfilePicture: async (userId: number, file: File): Promise<User> => {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/users/me/${userId}/profile-picture`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error(`Failed to upload profile picture: ${response.statusText}`);
       return response.json();
     },
 
@@ -325,6 +348,14 @@ export const api = {
       return response.json();
     },
 
+    getMyPaintingsRatings: async (): Promise<Rating[]> => {
+      const response = await fetch(`${API_BASE_URL}/ratings/my-paintings-ratings`, {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error(`Failed to fetch my paintings ratings: ${response.statusText}`);
+      return response.json();
+    },
+
     getPaintingRatings: async (paintingId: number): Promise<Rating[]> => {
       const response = await fetch(`${API_BASE_URL}/ratings/painting/${paintingId}`);
       if (!response.ok) throw new Error(`Failed to fetch painting ratings: ${response.statusText}`);
@@ -393,6 +424,14 @@ export const api = {
     getUserComments: async (userId: number): Promise<Comment[]> => {
       const response = await fetch(`${API_BASE_URL}/comments/user/${userId}`);
       if (!response.ok) throw new Error(`Failed to fetch user comments: ${response.statusText}`);
+      return response.json();
+    },
+
+    getMyPaintingsComments: async (): Promise<Comment[]> => {
+      const response = await fetch(`${API_BASE_URL}/comments/my-paintings-comments`, {
+        headers: getAuthHeaders(),
+      });
+      if (!response.ok) throw new Error(`Failed to fetch my paintings comments: ${response.statusText}`);
       return response.json();
     },
 

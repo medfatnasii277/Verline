@@ -1,9 +1,39 @@
 import os
 import uuid
+import re
 from typing import Optional
 from PIL import Image
 from fastapi import UploadFile, HTTPException, status
 from app.config import settings
+
+def allowed_file(filename: str) -> bool:
+    """Check if the file extension is allowed."""
+    if not filename:
+        return False
+    
+    allowed_extensions = {'jpg', 'jpeg', 'png', 'gif'}
+    file_extension = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+    return file_extension in allowed_extensions
+
+def secure_filename(filename: str) -> str:
+    """
+    Secure a filename by removing/replacing unsafe characters.
+    Based on Werkzeug's secure_filename function.
+    """
+    # Remove path components
+    filename = filename.split('/')[-1].split('\\')[-1]
+    
+    # Replace unsafe characters
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '', filename)
+    
+    # Remove leading dots and ensure we have an extension
+    filename = filename.lstrip('.')
+    
+    # If filename is empty or too long, generate a new one
+    if not filename or len(filename) > 100:
+        return f"file_{uuid.uuid4().hex[:8]}.jpg"
+    
+    return filename
 
 def validate_image(file: UploadFile) -> None:
     """Validate uploaded image file."""

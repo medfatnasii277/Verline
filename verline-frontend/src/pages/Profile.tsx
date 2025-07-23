@@ -48,17 +48,31 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  // Fetch user's ratings (for enthusiasts)
+  // Fetch user's ratings - different for artists vs enthusiasts
   const { data: myRatings } = useQuery({
-    queryKey: ['myRatings', user?.id],
-    queryFn: () => user ? api.ratings.getByUser(user.id) : Promise.resolve({ items: [], total: 0, page: 1, pages: 1 }),
+    queryKey: ['myRatings', user?.id, user?.role],
+    queryFn: () => {
+      if (!user) return Promise.resolve([]);
+      // For artists: show ratings their paintings have received
+      // For enthusiasts: show ratings they have given
+      return user.role === 'artist' 
+        ? api.ratings.getMyPaintingsRatings() 
+        : api.ratings.getMyRatings();
+    },
     enabled: !!user,
   });
 
-  // Fetch user's comments
+  // Fetch user's comments - different for artists vs enthusiasts
   const { data: myComments } = useQuery({
-    queryKey: ['myComments', user?.id],
-    queryFn: () => user ? api.comments.getByUser(user.id) : Promise.resolve({ items: [], total: 0, page: 1, pages: 1 }),
+    queryKey: ['myComments', user?.id, user?.role],
+    queryFn: () => {
+      if (!user) return Promise.resolve([]);
+      // For artists: show comments received on their paintings
+      // For enthusiasts: show comments they have made
+      return user.role === 'artist' 
+        ? api.comments.getMyPaintingsComments() 
+        : api.comments.getUserComments(user.id);
+    },
     enabled: !!user,
   });
 
@@ -83,6 +97,26 @@ const Profile = () => {
     },
   });
 
+  // Profile picture upload mutation
+  const uploadProfilePictureMutation = useMutation({
+    mutationFn: (file: File) => api.users.uploadProfilePicture(user!.id, file),
+    onSuccess: (updatedUser) => {
+      updateUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['user', user?.id] });
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to upload profile picture. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSave = () => {
     if (!user) return;
     
@@ -97,6 +131,13 @@ const Profile = () => {
       website: user?.website || "",
     });
     setIsEditing(false);
+  };
+
+  const handleProfilePictureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadProfilePictureMutation.mutate(file);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -128,9 +169,9 @@ const Profile = () => {
                 <div className="flex flex-col items-center md:items-start">
                   <div className="relative">
                     <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center">
-                      {user.avatar_url ? (
+                      {user.profile_picture ? (
                         <img 
-                          src={user.avatar_url} 
+                          src={user.profile_picture.startsWith('http') ? user.profile_picture : `http://localhost:8000${user.profile_picture}`}
                           alt={user.full_name || user.username}
                           className="w-full h-full rounded-full object-cover"
                         />
@@ -138,16 +179,20 @@ const Profile = () => {
                         <User className="w-16 h-16 text-primary" />
                       )}
                     </div>
+                    <input
+                      type="file"
+                      id="profile-picture-upload"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handleProfilePictureUpload}
+                    />
                     <Button
                       size="sm"
                       variant="outline"
                       className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0"
+                      disabled={uploadProfilePictureMutation.isPending}
                       onClick={() => {
-                        // TODO: Implement avatar upload
-                        toast({
-                          title: "Coming Soon",
-                          description: "Avatar upload will be available soon!",
-                        });
+                        document.getElementById('profile-picture-upload')?.click();
                       }}
                     >
                       <Camera className="w-4 h-4" />
@@ -298,10 +343,10 @@ const Profile = () => {
                 </TabsTrigger>
               )}
               <TabsTrigger value="ratings">
-                My Ratings ({myRatings?.total || 0})
+                {isArtist ? 'Ratings Received' : 'My Ratings'} ({myRatings?.length || 0})
               </TabsTrigger>
               <TabsTrigger value="comments">
-                My Comments ({myComments?.total || 0})
+                My Comments ({myComments?.length || 0})
               </TabsTrigger>
             </TabsList>
 
@@ -384,38 +429,51 @@ const Profile = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Star className="h-5 w-5" />
-                    My Ratings
+                    {isArtist ? 'Ratings Received' : 'My Ratings'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {myRatings?.items.length ? (
+                  {myRatings?.length ? (
                     <div className="space-y-4">
-                      {myRatings.items.map((rating) => (
+                      {myRatings.map((rating) => (
                         <div key={rating.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                          <div 
-                            className="w-16 h-16 rounded-lg overflow-hidden cursor-pointer"
-                            onClick={() => navigate(`/painting/${rating.painting.id}`)}
-                          >
-                            <img
-                              src={rating.painting.thumbnail_url || rating.painting.image_url}
-                              alt={rating.painting.title}
-                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-200"
-                              onError={(e) => {
-                                e.currentTarget.src = `https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop`;
-                              }}
-                            />
-                          </div>
-                          
-                          <div className="flex-1">
-                            <h4 
-                              className="font-semibold text-foreground hover:text-primary cursor-pointer"
+                          {rating.painting && (
+                            <div 
+                              className="w-16 h-16 rounded-lg overflow-hidden cursor-pointer"
                               onClick={() => navigate(`/painting/${rating.painting.id}`)}
                             >
-                              {rating.painting.title}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              by {rating.painting.artist.full_name || rating.painting.artist.username}
-                            </p>
+                              <img
+                                src={rating.painting.thumbnail_url || rating.painting.image_url}
+                                alt={rating.painting.title}
+                                className="w-full h-full object-cover hover:scale-110 transition-transform duration-200"
+                                onError={(e) => {
+                                  e.currentTarget.src = `https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop`;
+                                }}
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="flex-1">
+                            {rating.painting ? (
+                              <>
+                                <h4 
+                                  className="font-semibold text-foreground hover:text-primary cursor-pointer"
+                                  onClick={() => navigate(`/painting/${rating.painting.id}`)}
+                                >
+                                  {rating.painting.title}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {isArtist 
+                                    ? `Rated by ${rating.user?.full_name || rating.user?.username || 'Anonymous'}`
+                                    : `by ${rating.painting.artist?.full_name || rating.painting.artist?.username || 'Unknown artist'}`
+                                  }
+                                </p>
+                              </>
+                            ) : (
+                              <h4 className="font-semibold text-foreground">
+                                Painting not available
+                              </h4>
+                            )}
                             <p className="text-xs text-muted-foreground">
                               Rated on {formatDate(rating.created_at)}
                             </p>
@@ -440,12 +498,17 @@ const Profile = () => {
                   ) : (
                     <div className="text-center py-8">
                       <Star className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-semibold text-foreground mb-2">No ratings yet</h3>
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        {isArtist ? 'No ratings received yet' : 'No ratings yet'}
+                      </h3>
                       <p className="text-muted-foreground mb-4">
-                        Start exploring the gallery and rate some paintings!
+                        {isArtist 
+                          ? 'Share your artwork to start receiving ratings!' 
+                          : 'Start exploring the gallery and rate some paintings!'
+                        }
                       </p>
-                      <Button onClick={() => navigate('/gallery')}>
-                        Explore Gallery
+                      <Button onClick={() => navigate(isArtist ? '/dashboard' : '/gallery')}>
+                        {isArtist ? 'Upload Artwork' : 'Explore Gallery'}
                       </Button>
                     </div>
                   )}
@@ -463,40 +526,50 @@ const Profile = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {myComments?.items.length ? (
+                  {myComments?.length ? (
                     <div className="space-y-4">
-                      {myComments.items.map((comment) => (
+                      {myComments.map((comment) => (
                         <div key={comment.id} className="flex space-x-4 p-4 border rounded-lg">
-                          <div 
-                            className="w-16 h-16 rounded-lg overflow-hidden cursor-pointer"
-                            onClick={() => navigate(`/painting/${comment.painting.id}`)}
-                          >
-                            <img
-                              src={comment.painting.thumbnail_url || comment.painting.image_url}
-                              alt={comment.painting.title}
-                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-200"
-                              onError={(e) => {
-                                e.currentTarget.src = `https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop`;
-                              }}
-                            />
-                          </div>
+                          {comment.painting && (
+                            <div 
+                              className="w-16 h-16 rounded-lg overflow-hidden cursor-pointer"
+                              onClick={() => navigate(`/painting/${comment.painting.id}`)}
+                            >
+                              <img
+                                src={comment.painting.thumbnail_url || comment.painting.image_url}
+                                alt={comment.painting.title}
+                                className="w-full h-full object-cover hover:scale-110 transition-transform duration-200"
+                                onError={(e) => {
+                                  e.currentTarget.src = `https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=400&fit=crop`;
+                                }}
+                              />
+                            </div>
+                          )}
                           
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
-                              <h4 
-                                className="font-semibold text-foreground hover:text-primary cursor-pointer"
-                                onClick={() => navigate(`/painting/${comment.painting.id}`)}
-                              >
-                                {comment.painting.title}
-                              </h4>
+                              {comment.painting ? (
+                                <h4 
+                                  className="font-semibold text-foreground hover:text-primary cursor-pointer"
+                                  onClick={() => navigate(`/painting/${comment.painting.id}`)}
+                                >
+                                  {comment.painting.title}
+                                </h4>
+                              ) : (
+                                <h4 className="font-semibold text-foreground">
+                                  Painting not available
+                                </h4>
+                              )}
                               <span className="text-xs text-muted-foreground">
                                 {formatDate(comment.created_at)}
                               </span>
                             </div>
                             
-                            <p className="text-sm text-muted-foreground mb-2">
-                              by {comment.painting.artist.full_name || comment.painting.artist.username}
-                            </p>
+                            {comment.painting && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                by {comment.painting.artist?.full_name || comment.painting.artist?.username || 'Unknown artist'}
+                              </p>
+                            )}
                             
                             <p className="text-foreground">
                               {comment.content}

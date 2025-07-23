@@ -1,8 +1,8 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, desc, asc, func
 from typing import List, Optional, Tuple
 from fastapi import HTTPException, status
-from app.models import User, Painting, Category, Rating, Comment
+from app.models import User, Painting, Category, Rating, Comment, Notification
 from app.schemas import (
     UserCreate, UserUpdate, PaintingCreate, PaintingUpdate, 
     CategoryCreate, RatingCreate, CommentCreate, CommentUpdate,
@@ -254,16 +254,38 @@ class PaintingService:
     
     @staticmethod
     def delete_painting(db: Session, painting_id: int, user_id: int) -> bool:
-        db_painting = db.query(Painting).filter(
-            and_(Painting.id == painting_id, Painting.artist_id == user_id)
-        ).first()
-        
-        if not db_painting:
-            return False
-        
-        db.delete(db_painting)
-        db.commit()
-        return True
+        """Delete a painting and all associated data (ratings, comments, notifications)"""
+        try:
+            # First, get the painting to ensure it exists and belongs to the user
+            db_painting = db.query(Painting).filter(
+                and_(Painting.id == painting_id, Painting.artist_id == user_id)
+            ).first()
+            
+            if not db_painting:
+                return False
+            
+            # The cascade="all, delete-orphan" on the relationships should handle
+            # the deletion of related ratings, comments, and notifications automatically
+            # But let's ensure proper deletion order by explicitly handling it
+            
+            # Delete all notifications related to this painting
+            db.query(Notification).filter(Notification.painting_id == painting_id).delete()
+            
+            # Delete all ratings for this painting
+            db.query(Rating).filter(Rating.painting_id == painting_id).delete()
+            
+            # Delete all comments for this painting (including nested replies)
+            db.query(Comment).filter(Comment.painting_id == painting_id).delete()
+            
+            # Finally delete the painting itself
+            db.delete(db_painting)
+            db.commit()
+            return True
+            
+        except Exception as e:
+            db.rollback()
+            print(f"Error deleting painting {painting_id}: {str(e)}")
+            raise e
     
     @staticmethod
     def increment_view_count(db: Session, painting_id: int) -> None:
@@ -338,7 +360,18 @@ class RatingService:
     @staticmethod
     def get_user_ratings(db: Session, user_id: int) -> List[Rating]:
         """Get all ratings by a specific user"""
-        return db.query(Rating).filter(Rating.user_id == user_id).all()
+        return db.query(Rating).options(
+            joinedload(Rating.painting).joinedload(Painting.artist),
+            joinedload(Rating.user)
+        ).filter(Rating.user_id == user_id).all()
+    
+    @staticmethod
+    def get_artist_paintings_ratings(db: Session, artist_id: int) -> List[Rating]:
+        """Get all ratings received on paintings by a specific artist"""
+        return db.query(Rating).options(
+            joinedload(Rating.painting).joinedload(Painting.artist),
+            joinedload(Rating.user)
+        ).join(Painting).filter(Painting.artist_id == artist_id).all()
     
     @staticmethod
     def update_rating(db: Session, rating_id: int, rating_value: int, user_id: int) -> Optional[Rating]:
@@ -422,7 +455,11 @@ class CommentService:
         skip: int = 0,
         limit: int = 20
     ) -> List[Comment]:
-        return db.query(Comment).filter(
+        return db.query(Comment).options(
+            joinedload(Comment.user),
+            joinedload(Comment.painting),
+            joinedload(Comment.parent)
+        ).filter(
             and_(
                 Comment.painting_id == painting_id,
                 Comment.parent_id.is_(None),  # Only top-level comments
@@ -473,6 +510,26 @@ class CommentService:
         skip: int = 0,
         limit: int = 20
     ) -> List[Comment]:
-        return db.query(Comment).filter(
+        return db.query(Comment).options(
+            joinedload(Comment.painting).joinedload(Painting.artist),
+            joinedload(Comment.user),
+            joinedload(Comment.parent)
+        ).filter(
             Comment.user_id == user_id
+        ).offset(skip).limit(limit).all()
+
+    @staticmethod
+    def get_artist_received_comments(
+        db: Session, 
+        artist_id: int,
+        skip: int = 0,
+        limit: int = 20
+    ) -> List[Comment]:
+        """Get comments received on paintings by a specific artist"""
+        return db.query(Comment).options(
+            joinedload(Comment.painting).joinedload(Painting.artist),
+            joinedload(Comment.user),
+            joinedload(Comment.parent)
+        ).join(Painting).filter(
+            Painting.artist_id == artist_id
         ).offset(skip).limit(limit).all()

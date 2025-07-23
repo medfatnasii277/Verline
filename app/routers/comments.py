@@ -6,6 +6,8 @@ from app.database import get_db
 from app.schemas import CommentCreate, CommentUpdate, CommentResponse
 from app.crud import CommentService, PaintingService
 from app.notification_service import NotificationService
+from app.auth import get_current_user
+from app.models import User
 import asyncio
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
@@ -87,6 +89,26 @@ def get_user_comments(
 ):
     """Get comments by a user."""
     return CommentService.get_user_comments(db, user_id, skip, limit)
+
+@router.get("/artist/{artist_id}/received", response_model=List[CommentResponse])
+def get_artist_received_comments(
+    artist_id: int,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Get comments received on paintings by an artist."""
+    return CommentService.get_artist_received_comments(db, artist_id, skip, limit)
+
+@router.get("/my-paintings-comments", response_model=List[CommentResponse])
+def get_my_paintings_comments(
+    current_user: User = Depends(get_current_user),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """Get comments received on current user's paintings (for artists)."""
+    return CommentService.get_artist_received_comments(db, current_user.id, skip, limit)
 
 @router.get("/{comment_id}", response_model=CommentResponse)
 def get_comment(

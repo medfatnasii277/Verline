@@ -185,21 +185,35 @@ def delete_painting(
     db: Session = Depends(get_db)
 ):
     """Delete a painting (owner only)."""
-    # Get painting to retrieve image URLs for cleanup
-    painting = PaintingService.get_painting(db, painting_id)
-    if not painting or painting.artist_id != artist_id:
+    try:
+        # Get painting to retrieve image URLs for cleanup
+        painting = PaintingService.get_painting(db, painting_id)
+        if not painting or painting.artist_id != artist_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Painting not found or you don't have permission to delete it"
+            )
+        
+        # Store image URLs for cleanup before deletion
+        image_url = painting.image_url
+        thumbnail_url = painting.thumbnail_url
+        
+        # Delete from database
+        success = PaintingService.delete_painting(db, painting_id, artist_id)
+        if success:
+            # Clean up image files
+            delete_image_files(image_url, thumbnail_url)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Painting not found or you don't have permission to delete it"
+            )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Handle any database or other errors
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Painting not found or you don't have permission to delete it"
-        )
-    
-    # Delete from database
-    success = PaintingService.delete_painting(db, painting_id, artist_id)
-    if success:
-        # Clean up image files
-        delete_image_files(painting.image_url, painting.thumbnail_url)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Painting not found or you don't have permission to delete it"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error occurred: {str(e)}"
         )
