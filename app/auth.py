@@ -89,3 +89,25 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Use
     if not verify_password(password, user.hashed_password):
         return None
     return user
+
+async def get_current_user_ws(token: str, db: Session) -> User:
+    """Get current authenticated user for WebSocket connections."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials"
+    )
+    
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    if not user.is_active:
+        raise credentials_exception
+    return user

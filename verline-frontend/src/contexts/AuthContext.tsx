@@ -3,6 +3,7 @@ import { User, api, LoginData, RegisterData } from '@/services/api';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -26,16 +27,17 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is already logged in on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
+      const storedToken = localStorage.getItem('access_token');
+      if (storedToken) {
         try {
           // Decode JWT token to get username
-          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          const tokenPayload = JSON.parse(atob(storedToken.split('.')[1]));
           const username = tokenPayload.sub;
           
           // Check if token is expired
@@ -46,6 +48,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsLoading(false);
             return;
           }
+          
+          setToken(storedToken);
           
           // Fetch all users and find the one with matching username
           const allUsers = await api.users.getAll();
@@ -72,6 +76,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const authResponse = await api.auth.login(data);
+      
+      // Store token
+      setToken(authResponse.access_token);
       
       // Decode JWT token to get username
       const tokenPayload = JSON.parse(atob(authResponse.access_token.split('.')[1]));
@@ -112,6 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     api.auth.logout();
     setUser(null);
+    setToken(null);
   };
 
   const updateUser = (userData: User) => {
@@ -120,6 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    token,
     isLoading,
     login,
     register,

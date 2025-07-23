@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.schemas import CommentCreate, CommentUpdate, CommentResponse
 from app.crud import CommentService, PaintingService
+from app.notification_service import NotificationService
+import asyncio
 
 router = APIRouter(prefix="/comments", tags=["Comments"])
 
@@ -15,7 +17,7 @@ class CommentCreateRequest(BaseModel):
     parent_id: Optional[int] = None
 
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
-def create_comment(
+async def create_comment(
     comment_request: CommentCreateRequest,
     db: Session = Depends(get_db)
 ):
@@ -36,13 +38,27 @@ def create_comment(
         )
     
     # Create CommentCreate object for the service
-    comment = CommentCreate(
+    comment_data = CommentCreate(
         painting_id=comment_request.painting_id,
         content=comment_request.content,
         parent_id=comment_request.parent_id
     )
     
-    return CommentService.create_comment(db, comment, comment_request.user_id)
+    # Create the comment
+    comment = CommentService.create_comment(db, comment_data, comment_request.user_id)
+    
+    # Send notifications
+    try:
+        if comment.parent_id:
+            # This is a reply - notify the parent comment author
+            await NotificationService.notify_comment_reply(db, comment)
+        else:
+            # This is a new comment - notify the painting owner
+            await NotificationService.notify_painting_comment(db, comment)
+    except Exception as e:
+        print(f"Failed to send comment notification: {e}")
+    
+    return comment
 
 @router.get("/painting/{painting_id}", response_model=List[CommentResponse])
 def get_painting_comments(

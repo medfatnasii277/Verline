@@ -96,18 +96,23 @@ const Dashboard = () => {
 
   // Delete painting mutation
   const deleteMutation = useMutation({
-    mutationFn: (paintingId: number) => api.paintings.delete(paintingId),
+    mutationFn: ({ paintingId, artistId }: { paintingId: number; artistId: number }) => {
+      console.log('Delete mutation started for painting ID:', paintingId, 'by artist:', artistId);
+      return api.paintings.delete(paintingId, artistId);
+    },
     onSuccess: () => {
+      console.log('Delete mutation successful');
       queryClient.invalidateQueries({ queryKey: ['myPaintings'] });
       toast({
         title: "Success",
         description: "Painting deleted successfully!",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Delete mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete painting. Please try again.",
+        description: `Failed to delete painting: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -177,8 +182,22 @@ const Dashboard = () => {
   };
 
   const handleDelete = (paintingId: number) => {
+    console.log('handleDelete called with paintingId:', paintingId);
+    if (!user) {
+      console.error('No user found for delete operation');
+      toast({
+        title: "Error",
+        description: "You must be logged in to delete paintings.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to delete this painting? This action cannot be undone.')) {
-      deleteMutation.mutate(paintingId);
+      console.log('User confirmed delete, calling mutation with artistId:', user.id);
+      deleteMutation.mutate({ paintingId, artistId: user.id });
+    } else {
+      console.log('User cancelled delete');
     }
   };
 

@@ -7,11 +7,13 @@ from app.schemas import RatingCreate, RatingResponse
 from app.crud import RatingService, PaintingService
 from app.auth import get_current_user
 from app.models import User
+from app.notification_service import NotificationService
+import asyncio
 
 router = APIRouter(prefix="/ratings", tags=["Ratings"])
 
 @router.post("/", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
-def create_or_update_rating(
+async def create_or_update_rating(
     rating_request: RatingCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -32,7 +34,16 @@ def create_or_update_rating(
             detail="You cannot rate your own painting"
         )
     
-    return RatingService.create_or_update_rating(db, rating_request, current_user.id)
+    # Create or update the rating
+    rating = RatingService.create_or_update_rating(db, rating_request, current_user.id)
+    
+    # Send notification to painting owner
+    try:
+        await NotificationService.notify_painting_rating(db, rating)
+    except Exception as e:
+        print(f"Failed to send rating notification: {e}")
+    
+    return rating
 
 @router.get("/{painting_id}/rating/{user_id}", response_model=RatingResponse)
 def get_user_rating(

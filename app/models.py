@@ -13,6 +13,11 @@ class PaintingStatus(enum.Enum):
     PUBLISHED = "published"
     ARCHIVED = "archived"
 
+class NotificationType(enum.Enum):
+    RATING = "rating"
+    COMMENT = "comment"
+    REPLY = "reply"
+
 class User(Base):
     __tablename__ = "users"
     
@@ -32,6 +37,9 @@ class User(Base):
     paintings = relationship("Painting", back_populates="artist", cascade="all, delete-orphan")
     ratings = relationship("Rating", back_populates="user", cascade="all, delete-orphan")
     comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
+    # Notification relationships
+    sent_notifications = relationship("Notification", foreign_keys="Notification.sender_id", back_populates="sender", cascade="all, delete-orphan")
+    received_notifications = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient", cascade="all, delete-orphan")
 
 class Category(Base):
     __tablename__ = "categories"
@@ -107,3 +115,24 @@ class Comment(Base):
     user = relationship("User", back_populates="comments")
     painting = relationship("Painting", back_populates="comments")
     parent = relationship("Comment", remote_side=[id], backref="replies")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(Enum(NotificationType), nullable=False)
+    message = Column(Text, nullable=False)
+    painting_id = Column(Integer, ForeignKey("paintings.id"), nullable=True)
+    comment_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
+    rating_id = Column(Integer, ForeignKey("ratings.id"), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_notifications")
+    recipient = relationship("User", foreign_keys=[recipient_id], back_populates="received_notifications")
+    painting = relationship("Painting")
+    comment = relationship("Comment")
+    rating = relationship("Rating")

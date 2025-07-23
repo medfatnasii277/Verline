@@ -79,6 +79,23 @@ export interface AuthResponse {
   token_type: string;
 }
 
+export interface NotificationData {
+  id: number;
+  type: string;
+  message: string;
+  sender: {
+    id: number;
+    username: string;
+    full_name: string;
+    profile_picture?: string;
+  };
+  painting_id?: number;
+  comment_id?: number;
+  rating_id?: number;
+  is_read: boolean;
+  created_at: string;
+}
+
 export interface RegisterData {
   email: string;
   username: string;
@@ -235,12 +252,25 @@ export const api = {
       return response.json();
     },
 
-    delete: async (paintingId: number): Promise<void> => {
-      const response = await fetch(`${API_BASE_URL}/paintings/${paintingId}`, {
+    delete: async (paintingId: number, artistId: number): Promise<void> => {
+      console.log('Deleting painting with ID:', paintingId, 'by artist:', artistId);
+      console.log('Auth headers:', getAuthHeaders());
+      
+      const response = await fetch(`${API_BASE_URL}/paintings/${paintingId}?artist_id=${artistId}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
-      if (!response.ok) throw new Error(`Failed to delete painting: ${response.statusText}`);
+      
+      console.log('Delete response status:', response.status);
+      console.log('Delete response ok:', response.ok);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Delete error response:', errorText);
+        throw new Error(`Failed to delete painting: ${response.statusText} - ${errorText}`);
+      }
+      
+      console.log('Painting deleted successfully');
     },
   },
 
@@ -385,6 +415,53 @@ export const api = {
         headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error(`Failed to delete comment: ${response.statusText}`);
+    },
+  },
+
+  // Notifications
+  notifications: {
+    getAll: async (limit: number = 20, offset: number = 0, unreadOnly: boolean = false): Promise<NotificationData[]> => {
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+        unread_only: unreadOnly.toString(),
+      });
+      
+      const response = await fetch(`${API_BASE_URL}/notifications/?${params}`, {
+        headers: getAuthHeaders(),
+      });
+      
+      if (!response.ok) throw new Error(`Failed to fetch notifications: ${response.statusText}`);
+      return response.json();
+    },
+
+    getUnreadCount: async (): Promise<{ count: number }> => {
+      const response = await fetch(`${API_BASE_URL}/notifications/unread-count`, {
+        headers: getAuthHeaders(),
+      });
+      
+      if (!response.ok) throw new Error(`Failed to fetch unread count: ${response.statusText}`);
+      return response.json();
+    },
+
+    markAsRead: async (notificationId: number): Promise<{ message: string }> => {
+      const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+      });
+      
+      if (!response.ok) throw new Error(`Failed to mark notification as read: ${response.statusText}`);
+      return response.json();
+    },
+
+    markAllAsRead: async (): Promise<{ message: string }> => {
+      const response = await fetch(`${API_BASE_URL}/notifications/mark-all-read`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+      });
+      
+      if (!response.ok) throw new Error(`Failed to mark all notifications as read: ${response.statusText}`);
+      return response.json();
     },
   },
 };

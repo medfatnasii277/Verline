@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer
 from sqlalchemy.exc import SQLAlchemyError
 from app.database import engine, Base
-from app.routers import auth, users, categories, paintings, ratings, comments
+from app.routers import auth, users, categories, paintings, ratings, comments, websocket, notifications
 import os
 
 # Create database tables
@@ -67,6 +67,8 @@ app.include_router(categories.router)
 app.include_router(paintings.router)
 app.include_router(ratings.router)
 app.include_router(comments.router)
+app.include_router(notifications.router)
+app.include_router(websocket.router)
 
 # Global exception handler
 @app.exception_handler(SQLAlchemyError)

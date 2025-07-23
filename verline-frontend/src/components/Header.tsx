@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { Menu, X, User, LogOut, Settings, Palette } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { AuthModal } from "@/components/AuthModal";
+import { useAuth } from "../contexts/AuthContext";
+import { AuthModal } from "./AuthModal";
+import NotificationBell from "./NotificationBell";
 import { Link, useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -12,7 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "./ui/dropdown-menu";
 
 interface HeaderProps {
   onToggleMenu?: () => void;
@@ -58,6 +59,9 @@ export const Header = ({ onToggleMenu }: HeaderProps) => {
                 <Badge variant="secondary" className="hidden sm:inline-flex">
                   {user.role === 'artist' ? 'Artist' : 'Enthusiast'}
                 </Badge>
+                
+                {/* Notification Bell */}
+                <NotificationBell />
                 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
