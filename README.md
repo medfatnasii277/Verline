@@ -19,40 +19,15 @@ Verline is a full-stack art gallery platform built with FastAPI (Python) and Rea
 ---
 
 ## Project Architecture
-
-```mermaid
-flowchart TD
-    subgraph Frontend
-        F1[React + TypeScript]
-        F2[Styled Components / Tailwind CSS]
-        F3[Pages & Components]
-        F4[WebSocket Client]
-    end
-    subgraph Backend
-        B1[FastAPI]
-        B2[SQLAlchemy]
-        B3[Pydantic Schemas]
-        B4[Auth & Profile]
-        B5[Painting, Rating, Comment CRUD]
-        B6[WebSocket Notifications]
-        B7[Unit Tests (pytest)]
-    end
-    subgraph Database
-        D1[MySQL]
-    end
-    F1 --> F3
-    F3 --> F4
-    F4 <--> B6
-    F1 -->|REST API| B1
-    B1 --> B2
-    B1 --> B3
-    B1 --> B4
-    B1 --> B5
-    B1 --> B6
-    B2 --> D1
-    B7 -.-> B1
-```
-
++-------------------+        REST API        +-------------------+        +-----------+
+|   React Frontend  | <-------------------> |     FastAPI       | <-----> |  MySQL DB |
+| (TypeScript, WS)  |   WebSocket, Auth     |   (Python, CRUD)  |         +-----------+
++-------------------+                       +-------------------+
+        |                                         |
+        |                                         |
+        v                                         v
+  User Profiles, Gallery,                Models, Auth, Ratings,
+  Comments, Ratings, Notifs              Comments, Notifications
 ---
 
 ## Tech Stack
