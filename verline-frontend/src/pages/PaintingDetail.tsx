@@ -190,7 +190,7 @@ const PaintingDetail = () => {
                 <img
                   src={painting.image_url}
                   alt={painting.title}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black/10"
                 />
               </div>
               <CardHeader>

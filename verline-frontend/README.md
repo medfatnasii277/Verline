@@ -1,53 +1,204 @@
-# Welcome to your Lovable project
+# Verline Art Gallery - Frontend
 
-## Project info
+## Overview
 
-**URL**: https://lovable.dev/projects/1aeacbd2-36db-4d14-99f9-1cfc08b9ddb9
+The frontend for Verline Art Gallery is a modern React application built with TypeScript and Vite. It provides an intuitive interface for artists to manage their artwork and for enthusiasts to discover, rate, and comment on paintings. The application features real-time notifications, comprehensive user profiles, and responsive design.
 
-## How can I edit this code?
+## Technology Stack
 
-There are several ways of editing your application.
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite for fast development and optimized builds
+- **Styling**: Tailwind CSS with custom components
+- **UI Components**: shadcn/ui component library
+- **State Management**: TanStack Query (React Query) for server state
+- **Routing**: React Router for navigation
+- **Real-time**: WebSocket connections for notifications
+- **Authentication**: JWT token-based authentication with context
+- **Forms**: React Hook Form with validation
+- **Icons**: Lucide React icon library
 
-**Use Lovable**
+## Features Implemented
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1aeacbd2-36db-4d14-99f9-1cfc08b9ddb9) and start prompting.
+### Authentication & User Management
+- User registration and login forms
+- Role-based access control (Artist/Enthusiast)
+- Profile management with photo upload
+- User dashboard with personalized content
 
-Changes made via Lovable will be committed automatically to this repo.
+### Painting Gallery
+- Grid-based painting gallery with responsive design
+- Advanced filtering by category, artist, and search terms
+- Detailed painting view with zoom functionality
+- Artist-only painting upload and management
+- Image preview and validation
 
-**Use your preferred IDE**
+### Rating & Review System
+- Interactive star rating component
+- Role-based rating views (artists see ratings received, enthusiasts see ratings given)
+- Real-time rating updates and averages
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Comment System
+- Threaded comment display with replies
+- Role-based comment views (artists see comments on their paintings, enthusiasts see their comments)
+- Real-time comment notifications
+- Comment editing and deletion
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Real-time Notifications
+- WebSocket integration for instant notifications
+- Toast notifications for user actions
+- Notification history and management
 
-Follow these steps:
+### User Profiles
+- Comprehensive profile pages with artwork galleries
+- Bio, location, and website information
+- Profile picture upload and management
+- User statistics and activity tracking
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Installation & Setup
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn package manager
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation Steps
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. **Navigate to frontend directory**
+   ```bash
+   cd verline-frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   Create a `.env` file in the frontend root:
+   ```
+   VITE_API_BASE_URL=http://localhost:8000
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+## Project Structure
+
+```
+src/
+├── components/           # Reusable UI components
+│   ├── ui/              # shadcn/ui components
+│   ├── Header.tsx       # Navigation header
+│   ├── PaintingCard.tsx # Painting display component
+│   └── ...
+├── contexts/            # React contexts
+│   └── AuthContext.tsx  # Authentication state management
+├── pages/               # Page components
+│   ├── Home.tsx         # Homepage with gallery
+│   ├── Login.tsx        # Authentication pages
+│   ├── Profile.tsx      # User profile management
+│   ├── PaintingDetail.tsx # Detailed painting view
+│   └── ...
+├── services/            # API service layer
+│   └── api.ts           # Backend API integration
+├── hooks/               # Custom React hooks
+│   └── use-toast.ts     # Toast notification hook
+├── lib/                 # Utility functions
+│   └── utils.ts         # Helper functions
+└── theme/               # Styling configuration
+    └── victorianTheme.ts # Custom theme configuration
 ```
 
-**Edit a file directly in GitHub**
+## API Integration
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The frontend integrates with the Verline backend API through:
 
-**Use GitHub Codespaces**
+- **Authentication**: JWT token management with automatic refresh
+- **Real-time Updates**: WebSocket connections for live notifications
+- **File Uploads**: Image upload for paintings and profile pictures
+- **RESTful APIs**: Full CRUD operations for all resources
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
+## Key Components
+
+### Authentication Flow
+- Login/Register forms with validation
+- JWT token storage and management
+- Automatic token refresh and logout
+- Protected routes based on authentication status
+
+### Gallery Interface
+- Responsive grid layout for paintings
+- Lazy loading for performance
+- Search and filter functionality
+- Pagination for large datasets
+
+### Profile Management
+- Role-based profile interfaces
+- Tabbed navigation for different data views
+- Image upload with preview
+- Form validation and error handling
+
+### Real-time Features
+- WebSocket connection management
+- Automatic reconnection on disconnect
+- Real-time notification delivery
+- Connection status indicators
+
+## Development Notes
+
+### State Management
+- TanStack Query for server state synchronization
+- React Context for authentication state
+- Local state for UI interactions
+- Optimistic updates for better UX
+
+### Performance Optimizations
+- Code splitting with React.lazy
+- Image lazy loading and optimization
+- Query caching and background refetching
+- Memoization of expensive computations
+
+### Responsive Design
+- Mobile-first approach with Tailwind CSS
+- Flexible grid layouts
+- Touch-friendly interface elements
+- Optimized for various screen sizes
+
+## Build & Deployment
+
+### Development
+```bash
+npm run dev          # Start development server
+npm run lint         # Run ESLint
+npm run type-check   # TypeScript type checking
+```
+
+### Production
+```bash
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
+
+## Browser Support
+
+- Chrome 88+
+- Firefox 85+
+- Safari 14+
+- Edge 88+
+
+## Contributing
+
+1. Follow the existing code style and patterns
+2. Use TypeScript for all new components
+3. Implement responsive design for all UI elements
+4. Include proper error handling and loading states
+5. Test on multiple browsers and devices
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
 ## What technologies are used for this project?

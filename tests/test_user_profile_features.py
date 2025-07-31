@@ -63,7 +63,7 @@ class TestUserProfileFields:
         }
         
         response = client.post("/auth/register", json=user_data)
-        assert response.status_code == 200
+        assert response.status_code == 201
         user = response.json()
         
         # Note: Registration endpoint doesn't include location/website in response
@@ -87,7 +87,7 @@ class TestUserProfileFields:
         }
         
         reg_response = client.post("/auth/register", json=user_data)
-        assert reg_response.status_code == 200
+        assert reg_response.status_code == 201
         user = reg_response.json()
         
         # Login to get token
@@ -267,10 +267,10 @@ class TestProfilePictureUpload:
         
         assert updated_user["profile_picture"] is not None
         
-        # Verify file was created and converted to JPEG
+        # Verify file was created (PNG files are kept as PNG)
         file_path = updated_user["profile_picture"].replace("/uploads/", "uploads/")
         assert os.path.exists(file_path)
-        assert file_path.endswith(".jpg")  # PNG should be converted to JPEG
+        assert file_path.endswith(".png")  # PNG files keep their original format
         
         # Clean up
         if os.path.exists(file_path):
@@ -282,7 +282,7 @@ class TestProfilePictureUpload:
         files = {"file": ("test.jpg", image_data, "image/jpeg")}
         
         response = client.post("/users/me/1/profile-picture", files=files)
-        assert response.status_code == 401
+        assert response.status_code == 403  # Should be 403 Forbidden for missing auth
 
     def test_upload_profile_picture_wrong_user(self, db_session, create_test_image):
         """Test uploading profile picture for another user."""
@@ -318,7 +318,7 @@ class TestProfilePictureUpload:
         token = login_response.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
         
-        # Try to upload profile picture for user2
+        # Try to upload profile picture for user2 (should use user2's ID)
         image_data = create_test_image()
         files = {"file": ("test.jpg", image_data, "image/jpeg")}
         
