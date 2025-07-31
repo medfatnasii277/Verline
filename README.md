@@ -16,13 +16,7 @@ Verline is a full-stack art gallery platform built with FastAPI (Python) and Rea
 - Comprehensive unit tests: backend logic and API endpoints
 - Modern UI/UX: responsive, painting-focused design
 
----
 
-graph TD
-  F[Frontend: React/TypeScript] -- REST API & WebSocket --> B[Backend: FastAPI/Python]
-  B -- SQLAlchemy --> D[Database: MySQL]
-  F -- User Actions --> B
-  B -- Notifications --> F
 ---
 
 ## Tech Stack
